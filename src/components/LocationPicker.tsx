@@ -26,43 +26,99 @@ interface LocationPickerProps {
 }
 
 const LocationPicker = ({ onLocationSelect }: LocationPickerProps) => {
-  const [apiKey] = useState(localStorage.getItem("google_maps_api_key") || "AIzaSyCWol-tHUTHHN-f9bEi-n2BoZXdd64HDuM");
+  const [apiKey] = useState(localStorage.getItem("google_maps_api_key") || "");
   const [tempApiKey, setTempApiKey] = useState("");
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
 
   const handleSaveApiKey = () => {
     localStorage.setItem("google_maps_api_key", tempApiKey);
     window.location.reload();
   };
 
-  if (!apiKey) {
+  const handleSkipMaps = () => {
+    localStorage.setItem("skip_google_maps", "true");
+    window.location.reload();
+  };
+
+  if (!apiKey && !localStorage.getItem("skip_google_maps")) {
     return (
       <div className="space-y-3 p-4 border border-muted rounded-lg bg-muted/20">
-        <Label className="text-sm font-medium">Google Maps API Key Required</Label>
+        <Label className="text-sm font-medium">Google Maps Integration (Optional)</Label>
         <p className="text-xs text-muted-foreground">
-          To use location search, please enter your Google Maps API key.{" "}
-          <a
-            href="https://developers.google.com/maps/documentation/javascript/get-api-key"
-            target="_blank"
-            rel="noopener noreferrer"
+          Enable location search with Google Maps, or skip to use manual address entry.
+        </p>
+        {showApiKeyInput ? (
+          <>
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                placeholder="Enter Google Maps API Key"
+                value={tempApiKey}
+                onChange={(e) => setTempApiKey(e.target.value)}
+              />
+              <button
+                onClick={handleSaveApiKey}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 whitespace-nowrap"
+              >
+                Save
+              </button>
+            </div>
+            <a
+              href="https://developers.google.com/maps/documentation/javascript/get-api-key"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-primary underline"
+            >
+              How to get an API key
+            </a>
+          </>
+        ) : (
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowApiKeyInput(true)}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90"
+            >
+              Add API Key
+            </button>
+            <button
+              onClick={handleSkipMaps}
+              className="px-4 py-2 border border-border rounded-md hover:bg-muted"
+            >
+              Skip Maps
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (localStorage.getItem("skip_google_maps")) {
+    return (
+      <div className="space-y-3">
+        <Label htmlFor="manual-location">Address *</Label>
+        <Input
+          id="manual-location"
+          placeholder="Enter pickup address manually"
+          onChange={(e) => {
+            onLocationSelect?.({
+              address: e.target.value,
+              lat: 0,
+              lng: 0,
+            });
+          }}
+        />
+        <p className="text-xs text-muted-foreground">
+          Want to use map search?{" "}
+          <button
+            onClick={() => {
+              localStorage.removeItem("skip_google_maps");
+              window.location.reload();
+            }}
             className="text-primary underline"
           >
-            Get an API key
-          </a>
-        </p>
-        <div className="flex gap-2">
-          <Input
-            type="password"
-            placeholder="Enter Google Maps API Key"
-            value={tempApiKey}
-            onChange={(e) => setTempApiKey(e.target.value)}
-          />
-          <button
-            onClick={handleSaveApiKey}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90"
-          >
-            Save
+            Enable Google Maps
           </button>
-        </div>
+        </p>
       </div>
     );
   }
@@ -109,12 +165,17 @@ const MapSearchInner = ({ apiKey, onLocationSelect }: MapSearchInnerProps) => {
     }
   };
 
+  const handleRemoveApiKey = () => {
+    localStorage.removeItem("google_maps_api_key");
+    window.location.reload();
+  };
+
   if (loadError) {
     return (
       <div className="space-y-3 p-4 border border-destructive/30 rounded-lg bg-destructive/5">
-        <p className="text-sm font-semibold text-destructive">Google Maps API Not Activated</p>
+        <p className="text-sm font-semibold text-destructive">Google Maps API Error</p>
         <p className="text-xs text-muted-foreground">
-          The API key is valid but the required APIs are not enabled. Please enable these APIs in Google Cloud Console:
+          The API key has issues. Please ensure these APIs are enabled in Google Cloud Console:
         </p>
         <ul className="text-xs text-muted-foreground list-disc list-inside space-y-1">
           <li>Maps JavaScript API</li>
@@ -139,8 +200,14 @@ const MapSearchInner = ({ apiKey, onLocationSelect }: MapSearchInnerProps) => {
           </a>
         </div>
         <p className="text-xs text-muted-foreground mt-2">
-          After enabling, billing must be active and this domain should be added to API restrictions.
+          After enabling, ensure billing is active and this domain is added to HTTP referrer restrictions.
         </p>
+        <button
+          onClick={handleRemoveApiKey}
+          className="px-3 py-1.5 text-xs border border-border rounded-md hover:bg-muted"
+        >
+          Use Different API Key or Skip Maps
+        </button>
       </div>
     );
   }
