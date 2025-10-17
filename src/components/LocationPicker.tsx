@@ -26,7 +26,7 @@ interface LocationPickerProps {
 }
 
 const LocationPicker = ({ onLocationSelect }: LocationPickerProps) => {
-  const [apiKey] = useState(localStorage.getItem("google_maps_api_key") || "");
+  const [apiKey] = useState(localStorage.getItem("google_maps_api_key") || "AIzaSyCWol-tHUTHHN-f9bEi-n2BoZXdd64HDuM");
   const [tempApiKey, setTempApiKey] = useState("");
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
 
